@@ -1,0 +1,125 @@
+---
+title: "Assignment 2"
+output:
+  word_document: default
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+$$
+\text {Abhishek Alate * Ahmed Aqdam Tariq * Laura Le}
+$$
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#### Problem: Krupfeld International, Inc. (KII) is an American multinational diversified hospitality company that manages and franchises a broad portfolio of hotels and related lodging facilities.  Last year, KII employed approximately 127,500 people worldwide.  KII’s CEO is concerned about the increasing attrition rate among KII employees, and has contracted with your firm (which is entirely independent of KII) to investigate the reasons for the problem.  As part of the study, you survey a random sample of KII employees and measure, among other things, each employee’s tenure (“Tenure”:  number of years employed by KII), job type (“JobType”), and self-described expectation of the number of years they intend to continue working for KII (“Commitment”).  For the purposes of this assignment, we will focus on just two job types: 1=groundskeepers, 2=housekeepers.  The data are recorded in the file KII.dat, which includes a header record.  Based on these data, and using the framework described in class, please use R (and only R) to complete the following questions.  Use an alpha level of .05:
+
+<br /><br />
+
+#### Data setup.
+```{r, message=FALSE}
+kiiframe <- read.table("F:/GWU/Courses/Spring 2020/1. Statistics for Analytics II/Assigments/Assignment 2/KII.dat", header = TRUE)
+kiiframe$JobType <- as.factor(kiiframe$JobType)
+kiiframe.groundskeepers <- subset(kiiframe, kiiframe$JobType == 1)
+kiiframe.housekeepers <- subset(kiiframe, kiiframe$JobType == 2)
+head(kiiframe)
+summary(kiiframe)
+```
+***
+
+#### 1.	Among groundskeepers and housekeepers combined, can we be reasonably certain that Tenure predicts Commitment? Why/why not? If so, does Commitment increase or decrease with Tenure?  
+
+```{r}
+kiiframe.combined.model <- lm(Commitment ~ Tenure , data = kiiframe)
+plot(Commitment ~ Tenure, data = kiiframe)
+abline(kiiframe.combined.model)
+
+summary(kiiframe.combined.model)
+
+```
+**At 5% level of significance, p-value for tenure 0.973 implies weak statistical evidence that Tenure can predicts the Commitment. Furthermore, overall p-value and Adjusted R-squared simply provides further evidence that the tenure does not predict the Commitment. Finally, for each Tenure increase of 1 year, the Commitment will decrease by -0.001532 year.**
+
+***
+
+#### 2.	Among groundskeepers, can we be reasonably certain that Tenure predicts Commitment? Why/why not? If so, does Commitment increase or decrease with increases in Tenure? 
+
+
+```{r}
+kiiframe.groundskeepers.model <- lm(Commitment ~ Tenure, data = kiiframe.groundskeepers)
+plot(Commitment ~ Tenure, data = kiiframe)
+abline(kiiframe.groundskeepers.model)
+
+summary(kiiframe.groundskeepers.model)
+```
+**Answer**: At 5% level of significance, with the small p-value $<2 \times 10^{-16}$, we can confidently say Tenure is a significant predictor of groundskeepers' Commitment. Furthermore, Adjusted R-squared suggests model predicts 70% of the variability and model is significant overall with p-value $<2.2 \times 10^{-16}$. Finally, the coefficient estimate 0.24816 gives us that for each year in tenure the groundskeepers commitment is increased by 0.24816 years.
+
+***
+
+#### 3.	Among housekeepers, can we be reasonably certain that Tenure predicts Commitment? Why/why not? If so, does Commitment increase or decrease with increases in Tenure?  
+
+```{r}
+kiiframe.housekeepers.model <- lm(Commitment ~ Tenure, data = kiiframe.housekeepers)
+plot(Commitment ~ Tenure, data = kiiframe)
+abline(kiiframe.housekeepers.model, lty = 2)
+
+summary(kiiframe.housekeepers.model)
+
+```
+**Answer**: At 5% level of significance, with the small p-value $<2 \times 10^{-16}$, we can confidently say Tenure is a significant predictor of housekeepers' Commitment. Furthermore, Adjusted R-squared suggests model predicts 63% of the variability and model is significant overall with p-value $<2.2 \times 10^{-16}$. Finally, the coefficient estimate -0.25123 gives us that for each year in tenure the commitment decreses by -0.25123.
+
+***
+
+#### 4.	If your answer to Question 1 was different than your answer to Question 2 and/or Question 3, how do you explain this difference? 
+
+#### **The difference can be explained with the main effect of Tenure; essentially, the average slope. Therefore, this model is “interaction” model because the relationship between an independent variable Tenure and the dependent variable Commitment is influenced by the value of a second independent variable JobType. **
+
+***
+
+#### 5.	What is the simple effect of Tenure among grounds keepers? Please interpret this simple effect. 
+
+```{r}
+
+aggregate(Commitment ~ Tenure + JobType, kiiframe, mean)
+
+kiiframe.all.model <- lm(Commitment ~ Tenure + JobType + Tenure*JobType, data = kiiframe)
+
+predict(kiiframe.all.model, data.frame(JobType="1", Tenure = 9)) - predict(kiiframe.all.model, data.frame(JobType="1", Tenure = 8))
+```
+**Answer:** Simple effect of Tenure | JobType=2 = 0.25. This explains difference of commitment among the groundskeepers with each increasing year of tenure.
+
+
+***
+
+#### 6.	What is the simple effect of JobType among those people at an average Tenure level? Please interpret this simple effect. 
+
+```{r}
+# Our Tenure Mean
+getElement(summary(kiiframe), 4)
+
+predict(kiiframe.all.model, data.frame(JobType = "1", Tenure = 9 ))- predict(kiiframe.all.model, data.frame(JobType = "2", Tenure = 9 ))
+```
+**Answer:** The simple effect of JobType among those people at an average Tenure level is 4.073529, this explains the commitment difference between two jobs at the mean tenure of given sample.
+
+
+***
+
+#### 7.	If you were asked to provide a main effect of Tenure, what value would you provide? (Please provide a value.) How did you derive this value? Please interpret this main effect. 
+
+```{r}
+kiiframe.all.model$coefficients[2]+kiiframe.all.model$coefficients[4]/2
+```
+**Answer:** Main effect of Tenure is -0.001531863, which is the average slope between groundskeepers and housekeepers. This is the overall effect of Tenure on job types and does not change by different level.
+
+
+***
+
+#### 8.	If you were asked to provide a main effect of JobType, what value would you provide? (Please provide a value.) How did you derive this value? Please interpret this main effect. 
+
+```{r}
+predict(kiiframe.all.model, data.frame(JobType = "1", Tenure = 9 ))- predict(kiiframe.all.model, data.frame(JobType = "2", Tenure = 9 ))
+```
+**Answer:** Main effect of JobType is 4.073529, which is evaluated at the middle point, mean value of Tenue. This is overall the effect of JobType on Tenure and does not change by different level.
