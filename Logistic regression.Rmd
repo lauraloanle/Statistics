@@ -1,0 +1,176 @@
+---
+title: "Assignment 1"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+$$
+\text {Abhishek Alate * Ahmed Aqdam Tariq * Laura Le}
+$$
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message=FALSE}
+library(pscl)
+library(SDMTools)
+library(heplots)
+library(pROC)
+```
+
+#### Problem: FlixIT Inc. purchases unlimited licenses to movie content that is then streamed on-demand to FlixIt subscribers. Subscribers pay a flat monthly fee, and are provided with unlimited access to FlixIt content. Last year, FlixIt implemented a “Recruit A Friend”(RAF) initiative. Under this initiative, any current FlixIt subscriber who recruits someone who purchases an annual FlixIt subscription is given a one-month rebate. FlixIt now wishes to determine the characteristics of subscribers who have participated in this initiative. Data collected from a random sample of FlixIt subscribers (contained in the file FlixIt.dat, which includes a header record) include age of the subscriber (Age: integer), region of the country in which the subscriber resides (Region:1=north, 2=south, 3=east, 4=west), and whether or not the subscriber participated in the RAF initiative (Partic: 0=no, 1=yes). Based on these data, and using a Logistic Regression framework, use R, to complete the following questions. Use the alpha level of 0.05.
+
+<br /><br />
+
+#### Data setup.
+```{r, message=FALSE}
+flixitframe <- read.table("F:/GWU/Courses/Spring 2020/1. Statistics for Analytics II/Assigments/Assignment 1/FlixIt.dat", header = TRUE)
+flixitframe$Region <- as.factor(flixitframe$Region)
+```
+***
+
+#### 1.	Can we be reasonably certain that Age predicts Partic? Explain.
+
+```{r}
+# Running regression model with age independent variable with the Partic as dependent variable.
+flixitframe.age.logit <- glm(Partic ~ Age, data = flixitframe, family = "binomial")
+summary(flixitframe.age.logit)
+```
+#### **Given extremely small p-value, at 5% signicance level, we reject the null hypothesis and conclude that age is signicant.<br />**
+
+***
+
+#### 2.	Can we be reasonably certain that Region predicts Partic? Explain.
+
+```{r}
+# Running regression model with Re independent variable with the Partic as dependent variable.
+flixitframe.region.logit <- glm(Partic ~ Region, data = flixitframe, family = "binomial")
+summary(flixitframe.region.logit)
+
+```
+#### **Given large p-value, at 5% signicance level, we fail to reject the null hypothesis and conclude that region is NOT signicant on it's own.<br />**
+
+***
+
+#### 3.	Can we be reasonably certain that Age predicts Partic after controlling for Region? Explain.
+
+```{r}
+flixitall.logit <- glm(Partic ~ Age+Region, data = flixitframe, family = "binomial")
+summary(flixitall.logit)
+```
+#### **Given large p-value, at 5% signicance level, we fail to reject the null hypothesis and conclude that Age and Region are not significant.<br />**
+
+***
+
+#### 4.	Can we be reasonably certain that Region predicts Partic after controlling for Age? Explain.
+
+#### **Similarly, given large p-value, at 5% signicance level, we fail to reject the null hypothesis and conclude that Age and Region are not significant.<br />**
+
+***
+
+#### 5.	What is your evaluation of the model fit in terms of McFadden’s score?
+
+```{r}
+pR2(flixitframe.age.logit)
+pR2(flixitframe.region.logit)
+pR2(flixitall.logit)
+
+```
+#### **When Age is the only predictor, 18% of the variation in the model is explained. <br /> When Region is the only predictor, 27% of the variation in the model is explained. <br /> When Age and region are predictors, 28% of the variation in the model is explained.**
+
+
+***
+
+#### 6.	Using a threshold value of 0.5, create the confusion matrix, and find the total correct classification rate. 
+
+```{r}
+flixitframe["PredVal"] <- predict(flixitframe.age.logit, list(Age=flixitframe$Age), type="link")
+flixitframe["PredProb"] <- predict(flixitframe.age.logit, list(Age=flixitframe$Age), type="response")
+flixitframe["PredBin"] <- (flixitframe$PredProb>0.5)+0
+confusion <- t(confusion.matrix(flixitframe$Partic, flixitframe$PredBin))
+confusion <- addmargins(confusion)
+confusion
+
+```
+#### **(TN+TP)/(TN+FN+TP+FP) = 95+18/150 = 0.7533333, the total correct classification rate is 0.75.**
+
+
+***
+
+#### 7.	When predicting Partic using Age, what value does the AUROC take and how would you interpret this value?
+
+```{r}
+ROC.curve <- roc(Partic ~ Age, data = flixitframe)
+ROC.curve
+```
+#### **The area under the curve is 0.7744 but it is below 0.8 which indicates that the model does not do a great job in discriminating between the two categories of the outcome variable.<br />**
+
+
+***
+
+#### 8.	Find the odds that a 35 year old subscriber from the East will be a RAF participant.
+
+```{r}
+exp(-20.31823+0.05545*35+17.74620)
+```
+#### **The odds are 0.5319105. <br />**
+
+
+***
+
+#### 9.	Find the probability that a 35 year old subscriber from the east will be a RAF participant. 
+
+```{r}
+exp(-20.31823+0.05545*35+17.74620)/(1+exp(-20.31823+0.05545*35+17.74620))
+```
+#### **The probability is 0.3472204. <br />**
+
+
+***
+
+#### 10.	Find the best estimate of the coefficient associated with AGE in the full model and interpret its meaning. 
+
+```{r}
+exp(0.05545)
+```
+#### **Age coefficient is 0.05545, it's exponent is 1.057016. This implies odds of participation are multiplied by 1.057016 for each unit increase in the Age.<br />**
+
+
+***
+
+#### 11.	If you were asked to provide the best estimate of the correlation between Age and Region what would you say?
+
+```{r}
+
+ANOVA <- lm(Age~Region, data = flixitframe)
+summary(ANOVA)
+
+etasq(ANOVA, anova=TRUE, partial=FALSE)
+```
+#### **eta-square value in synonymous to the R-squared value and it represents the strength of relationship which is 57%**
+
+***
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
